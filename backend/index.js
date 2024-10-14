@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 mongoose.connect(config.connectionString);
 
 const User = require('./models/user.model')
+const Note = require('./models/note.model');
 
 const express = require('express');
 const app = express();
@@ -112,6 +113,43 @@ app.post('/login', async (req, res) => {
         });
     }
 });
+
+//Add a note
+app.post('/add-note', authenticateToken, async (req, res) => {
+    const { title, content, tags } = req.body;
+    const { user } = req.user;
+
+
+    if (!title) {
+        return res.status(400).json({ error: true, message: "Title is required" });
+    }
+
+    if (!content) {
+        return res.status(400).json({ error: true, message: "Content is required" });
+    }
+
+    try {
+        const note = new Note({
+            title,
+            content,
+            tags: tags || [],
+            userId: user._id,
+        });
+
+        await note.save();
+
+        return res.json({
+            error: false,
+            message: "Note added successfully",
+            note,
+        });
+    } catch (error){
+        return res.status(500).json({
+            error: true,
+            message: "Internal server error",
+        });
+    }
+})
 
 app.listen(8000);
 
