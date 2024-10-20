@@ -302,6 +302,7 @@ app.get('/search-notes/', authenticateToken, async (req, res) => {
     }
 
     try {
+
         const matchingNotes = await Note.find({
             userId: user._id,
             $or: [
