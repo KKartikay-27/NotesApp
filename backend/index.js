@@ -1,5 +1,8 @@
 require("dotenv").config();
 
+const apiUrl = 'https://notesapp-ixg7.onrender.com';
+
+
 const mongoose = require('mongoose');
 
 mongoose.connect(process.env.CONNECTION_STRING);
@@ -10,6 +13,7 @@ const Note = require('./models/note.model');
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const path = require('path');
 
 
 const jwt = require('jsonwebtoken');
@@ -19,9 +23,11 @@ app.use(express.json());
 
 app.use(
     cors({
-        origin: '*',
+        origin: 'https://notesapp-vz2r.onrender.com', 
     })
 );
+
+app.use(express.static(path.join(__dirname, '../frontend/notesapp/dist')));
 
 app.get('/', (req, res) => {
     res.json({ data: "Hello" });
@@ -325,7 +331,12 @@ app.get('/search-notes/', authenticateToken, async (req, res) => {
     }
 });
 
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/notesapp/dist/index.html'));
+});
 
-app.listen(8000);
+app.listen(8000, () => {
+    console.log('Server is running on port 8000');
+});
 
 module.exports = app;
