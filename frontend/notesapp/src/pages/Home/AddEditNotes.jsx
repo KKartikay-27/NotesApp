@@ -2,18 +2,66 @@ import React from 'react'
 import TagInput from '../../components/Input/TagInput'
 import { useState } from 'react';
 import { MdClose } from 'react-icons/md';
+import axiosInstance from '../../utils/axiosInstance';
 
-const AddEditNotes = ({ noteData, type, onClose }) => {
+const AddEditNotes = ({ getAllNotes, noteData, type, onClose, showToastMessage }) => {
 
-    const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
-    const [tags, setTags] = useState([]);
+    const [title, setTitle] = useState(noteData?.title || '');
+    const [content, setContent] = useState(noteData?.content || '');
+    const [tags, setTags] = useState(noteData?.tags || []);
 
     const [error, setError] = useState(null);
+
     //Add a new note
-    const addNewNote = async () => { };
+    const addNewNote = async () => {
+        try {
+            const response = await axiosInstance.post('/add-note', {
+                title,
+                content,
+                tags,
+            });
+
+            if (response.data && response.data.note) {
+                showToastMessage("Note added successfully");
+                getAllNotes(); 
+                onClose(); 
+            }
+        } catch (error) {
+            if (error.response.data && error.response.data.message) {
+                setError(error.response.data.message);
+            }
+            else {
+                setError("An unexpected error occurred. Please try again.");
+            }
+        }
+    };
+
     //Edit a note
-    const editNote = async () => { };
+    const editNote = async () => {
+
+        const noteId = noteData._id;
+
+        try {
+            const response = await axiosInstance.put('/edit-note/' + noteId,{
+                title,
+                content,
+                tags,
+            });
+
+            if (response.data && response.data.note) {
+                showToastMessage("Note updated successfully");
+                getAllNotes(); 
+                onClose(); 
+            }
+        } catch (error) {
+            if (error.response.data && error.response.data.message) {
+                setError(error.response.data.message);
+            }
+            else {
+                setError("An unexpected error occurred. Please try again.");
+            }
+        }
+    };
 
     const handleAddNote = () => {
         if (!title) {
@@ -33,6 +81,7 @@ const AddEditNotes = ({ noteData, type, onClose }) => {
 
         setError("");
     };
+
 
     return (
         <div className='relative'>
@@ -76,7 +125,7 @@ const AddEditNotes = ({ noteData, type, onClose }) => {
 
 
             <button className='btn-primary font-medium mt-5 p-3' onClick={handleAddNote}>
-                ADD
+                {type === 'edit' ? "UPDATE" : "ADD"}
             </button>
 
         </div>
