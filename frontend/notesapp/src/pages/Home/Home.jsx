@@ -9,6 +9,7 @@ import axiosInstance from '../../utils/axiosInstance'
 import Toast from '../../components/ToastMessage/Toast'
 import EmptyCart from '../../components/EmptyCart/EmptyCart'
 import AddNoteImg from '../../assets/images/add-note.svg'
+import noDataImg from '../../assets/images/no-Data.svg'
 
 const Home = () => {
 
@@ -27,6 +28,8 @@ const Home = () => {
 
   const [allNotes, setAllNotes] = useState([]);
   const [userInfo, setUserInfo] = useState(null);
+
+  const [isSearch, setIsSearch] = useState(false);
 
   const navigate = useNavigate();
 
@@ -95,6 +98,37 @@ const Home = () => {
 
   }
 
+  const onSearchNote = async (query) => {
+    try {
+      const response = await axiosInstance.get('/search-notes', { params: { query } });
+      if (response.data && response.data.notes) {
+        setIsSearch(true);
+        setAllNotes(response.data.notes);
+      }
+    } catch (error) {
+      console.log("An unexpected error occurred. Please try again.");
+    };
+  }
+
+  const handleClearSearch = async () => {
+    setIsSearch(false);
+    getAllNotes();
+  }
+
+  const updateIsPinned = async (noteData) => {
+    const noteId = noteData._id;
+
+    try {
+      const response = await axiosInstance.put('/update-note-pinned/' + noteId, { isPinned: !noteData.isPinned });
+      if (response.data && response.data.note) {
+        showToastMessage(noteData.isPinned ? "Note Unpinned Successfully" : "Note Pinned Successfully");
+        getAllNotes();
+      }
+    }
+    catch (error) {
+      console.log("An unexpected error occurred. Please try again.");
+    }
+  }
 
   useEffect(() => {
     getAllNotes();
@@ -105,7 +139,7 @@ const Home = () => {
 
   return (
     <>
-      <Navbar userInfo={userInfo} />
+      <Navbar userInfo={userInfo} onSearchNote={onSearchNote} handleClearSearch={handleClearSearch} />
 
       <div className='container mx-auto'>
         {allNotes.length > 0 ? <div className='grid grid-cols-3 gap-4 mt-8 '>
@@ -119,9 +153,11 @@ const Home = () => {
               isPinned={item.isPinned}
               onEdit={() => handleEdit(item)}
               onDelete={() => deleteNote(item)}
-              onPinNote={() => { }} />
+              onPinNote={() => updateIsPinned(item)} />
           ))}
-        </div> : <EmptyCart imgSrc = {AddNoteImg} message="Start creating your first note ! Click the '+' button to jot down your ideas, thoughts, ideas nad reminders. Let's get started. !"/>}
+        </div> : <EmptyCart
+          imgSrc={isSearch ? noDataImg : AddNoteImg}
+          message={isSearch ? "Oops ! No notes found for matching your search query." : "Start creating your first note ! Click the '+' button to jot down your ideas, thoughts, ideas nad reminders. Let's get started. !"} />}
       </div>
 
       <button className='w-16 h-16 flex items-center justify-center rounded-2xl bg-primary hover:bg-blue-600 absolute right-10 bottom-10 '

@@ -114,21 +114,21 @@ app.post('/login', async (req, res) => {
 });
 
 //Get User
-app.get('/get-user', authenticateToken, async (req,res) => {
+app.get('/get-user', authenticateToken, async (req, res) => {
     const user = req.user.user;
-    
-    const isUser = await User.findOne({ _id : user._id });
 
-    if(!isUser){
+    const isUser = await User.findOne({ _id: user._id });
+
+    if (!isUser) {
         return res.sendStatus(401);
     }
 
     return res.json({
-        user : {
-            fullname : isUser.fullname,
-            email : isUser.email,
-            _id : isUser._id,
-            createdOn : isUser.createdOn,
+        user: {
+            fullname: isUser.fullname,
+            email: isUser.email,
+            _id: isUser._id,
+            createdOn: isUser.createdOn,
         },
         message: "",
     });
@@ -247,8 +247,8 @@ app.delete('/delete-note/:noteId', authenticateToken, async (req, res) => {
         await note.deleteOne({ _id: noteId, userId: user._id });
 
         return res.json({
-            error:false,
-            message : "Note deleted successfully"
+            error: false,
+            message: "Note deleted successfully"
         });
 
     } catch (error) {
@@ -260,7 +260,7 @@ app.delete('/delete-note/:noteId', authenticateToken, async (req, res) => {
 });
 
 //Pin a note
-app.put('/update-note-pinned/:noteId', authenticateToken, async(req,res) => {
+app.put('/update-note-pinned/:noteId', authenticateToken, async (req, res) => {
     const noteId = req.params.noteId;
     const { isPinned } = req.body;
     const { user } = req.user;
@@ -272,14 +272,48 @@ app.put('/update-note-pinned/:noteId', authenticateToken, async(req,res) => {
             return res.status(400).json({ error: true, message: "Note not found" });
         }
 
-        if (isPinned) note.isPinned = isPinned;
+        if (typeof isPinned === 'boolean') {
+            note.isPinned = isPinned;
+        }
 
         await note.save();
 
         return res.json({
             error: false,
             note,
-            message: "Note pinned successfully",
+            message: isPinned ? "Note pinned successfully" : "Note unpinned successfully",
+        })
+
+    } catch (error) {
+        return res.status(500).json({
+            error: true,
+            message: "Internal server error",
+        });
+    }
+});
+
+//Search notes
+app.get('/search-notes/', authenticateToken, async (req, res) => {
+    const { user } = req.user;
+    const { query } = req.query;
+
+    if (!query) {
+        return res.status(400).json({ error: true, message: "Search Query is required" });
+    }
+
+    try {
+        const matchingNotes = await Note.find({
+            userId: user._id,
+            $or: [
+                { title: { $regex: new RegExp(query, 'i') } },
+                { content: { $regex: new RegExp(query, 'i') } },
+            ]
+        });
+
+        return res.json({
+            error: false,
+            notes: matchingNotes,
+            message: "Notes matching the search query fetched successfully",
         })
 
     } catch (error) {
